@@ -8,7 +8,7 @@ data_dir = os.path.abspath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "data"))
 
 today = datetime.today()
-filename = 'mock_revenue_{}_{}-{}.csv'.format("HN", today.month, today.year)
+filename = 'mock_revenue_{}_{}-{}.csv'.format("HN", "9", today.year)
 
 # if os.path.exists(os.path.join(data_dir, filename)):
 #     print("exists")
