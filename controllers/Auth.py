@@ -30,7 +30,6 @@ class Auth:
         try:
             df_account = pd.read_csv(os.path.join(data_dir, "account.csv"))
             df_insert_data = pd.DataFrame([data])
-            print(df_insert_data)
             df_account = pd.concat(
                 [df_account, df_insert_data], ignore_index=True)
             df_account.to_csv(os.path.join(

@@ -7,3 +7,4 @@ class RevenueTarget(BaseModel):
     revenue_subcategory: str | None = None
     revenue_detail: str | None = None
     value: float | None = None
+    branch: str | None = None

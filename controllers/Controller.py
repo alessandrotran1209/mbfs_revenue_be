@@ -4,11 +4,13 @@ import os
 from datetime import datetime
 import calendar
 
+from utils.branches import get_branch_code
+
 data_dir = os.path.abspath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "data"))
 
 today = datetime.today()
-filename = 'mock_revenue_{}_{}-{}.csv'.format("HN", "9", today.year)
+filename = 'mock_revenue_{}_{}-{}.csv'.format("HN", today.month, today.year)
 
 # if os.path.exists(os.path.join(data_dir, filename)):
 #     print("exists")
@@ -29,7 +31,10 @@ filename = 'mock_revenue_{}_{}-{}.csv'.format("HN", "9", today.year)
 
 
 def insert(revenue_target):
-    df_revenue = pd.read_csv(os.path.join(data_dir, filename))
+    branch_filename = os.path.join(data_dir, 'mock_revenue_{}_{}-{}.csv'.format(
+        get_branch_code(revenue_target["branch"]), today.month, today.year))
+    df_revenue = pd.read_csv(os.path.join(data_dir, branch_filename))
+
     df_is_duplicated = df_revenue.loc[(df_revenue["revenue_target"] == revenue_target["value"]) & (df_revenue["revenue_source"] == revenue_target["revenue_source"]) &
                                       (df_revenue["revenue_category"] == revenue_target["revenue_category"]) & (df_revenue["revenue_subcategory"] == revenue_target["revenue_subcategory"]) & (df_revenue["revenue_detail"] == revenue_target["revenue_detail"])]
     if len(df_is_duplicated.index) == 0:
@@ -49,14 +54,15 @@ def insert(revenue_target):
     else:
         raise Exception('duplicated')
     try:
-        df_revenue.to_csv(os.path.join(data_dir, filename), index=False)
+        df_revenue.to_csv(os.path.join(data_dir, branch_filename), index=False)
         return True
     except Exception:
         return False
 
 
 def update(revenue_target):
-    df_revenue = pd.read_csv(os.path.join(data_dir, filename))
+    df_revenue = pd.read_csv(os.path.join(data_dir, 'mock_revenue_{}_{}-{}.csv'.format(
+        get_branch_code(revenue_target['branch']), today.month, today.year)))
     df_revenue = df_revenue.fillna("")
     data = {
         "revenue_source": revenue_target["revenue_source"],
@@ -80,8 +86,10 @@ def update(revenue_target):
     return True
 
 
-def get_revenue_from_source(source_value: str):
-    df_revenue = pd.read_csv(os.path.join(data_dir, filename))
+def get_revenue_from_source(branch: str, source_value: str):
+    branch_filename = 'mock_revenue_{}_{}-{}.csv'.format(
+        get_branch_code(branch), today.month, today.year)
+    df_revenue = pd.read_csv(os.path.join(data_dir, branch_filename))
     df_source = df_revenue.loc[df_revenue["revenue_source"]
                                == source_value].fillna('')
     ret = []
@@ -98,7 +106,6 @@ def get_revenue_from_source(source_value: str):
         revenue_record['complete_rate'] = "{}%".format(round(100 * sum /
                                                              revenue_record["revenue_target"], 2))
         ret.append(revenue_record)
-        print(ret)
     return ret
 
 
@@ -126,11 +133,11 @@ def get_detail_suggestion(source_value: str, category_value: str, subcategory_va
     return detail
 
 
-def insert_excel(revenue_targets):
+def insert_excel(revenue_targets, target):
+    df_revenue = check_existence(target)
     data = []
     for revenue_target in revenue_targets:
         revenue_target = revenue_target.__dict__
-        print(revenue_target)
         data.append({
             "revenue_source": revenue_target["revenue_source"],
             "revenue_category": revenue_target["revenue_category"],
@@ -143,15 +150,12 @@ def insert_excel(revenue_targets):
     df_revenue = pd.concat([df_revenue, df_insert_data], ignore_index=True)
 
     try:
-        no_week = len(calendar.monthcalendar(today.year, today.month))
-        column_names = ['revenue_source',
-                        'revenue_category', 'revenue_subcategory', 'revenue_detail', 'revenue_target', ]
-        column_names.extend(['week{}'.format(x) for x in range(no_week)])
+        column_names = get_column_names()
         print(column_names)
         df_insert_data = df_insert_data.reindex(columns=column_names)
         df_insert_data = df_insert_data.fillna(0)
         df_insert_data.to_csv(os.path.join(
-            data_dir, 'mock_revenue_{}_{}-{}.csv'.format("HN", today.month, today.year)), columns=column_names, index=False)
+            data_dir, 'mock_revenue_{}_{}-{}.csv'.format(get_branch_code(target), today.month, today.year)), columns=column_names, index=False)
         return True
     except Exception as e:
         print(e)
@@ -164,3 +168,14 @@ def get_column_names():
                     'revenue_category', 'revenue_subcategory', 'revenue_detail', 'revenue_target', ]
     column_names.extend(['week{}'.format(x) for x in range(no_week)])
     return column_names
+
+
+def check_existence(target):
+    file_path = os.path.join(data_dir, 'mock_revenue_{}_{}-{}.csv'.format(
+        get_branch_code(target), today.month, today.year))
+    if os.path.exists(file_path):
+        return pd.read_csv(file_path)
+    else:
+        columns = get_column_names()
+        df_revenue = pd.DataFrame(columns=columns)
+        return df_revenue
