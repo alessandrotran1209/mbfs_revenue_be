@@ -92,9 +92,9 @@ def get_revenue_from_source(branch: str, source_value: str):
     df_revenue = pd.read_csv(os.path.join(data_dir, branch_filename))
     df_source = df_revenue.loc[df_revenue["revenue_source"]
                                == source_value].fillna('')
-    ret = []
     columns = df_source.columns.to_list()
-    for index, row in df_source.iterrows():
+    ret = []
+    for index, row in df_source.sort_values(by=['revenue_category', 'revenue_subcategory', 'revenue_detail'], ascending=False).iterrows():
         revenue_record = {}
         sum = 0
         for column in columns:
@@ -151,7 +151,6 @@ def insert_excel(revenue_targets, target):
 
     try:
         column_names = get_column_names()
-        print(column_names)
         df_insert_data = df_insert_data.reindex(columns=column_names)
         df_insert_data = df_insert_data.fillna(0)
         df_insert_data.to_csv(os.path.join(

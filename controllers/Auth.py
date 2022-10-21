@@ -13,7 +13,6 @@ class Auth:
         hashed_password = hashlib.sha256(
             password.encode('utf-8')).hexdigest()
         if hashed_password == user['password']:
-            print('Password matched')
             return True
         return False
 
