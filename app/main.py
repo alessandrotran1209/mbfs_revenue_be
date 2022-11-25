@@ -11,6 +11,16 @@ from models.RevenueUpdate import RevenueUpdate
 
 import api
 
+import logging
+import string
+import time
+import random
+
+logging.config.fileConfig('logging.conf', disable_existing_loggers=False)
+
+# get root logger
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
 origins = [
     # "http://localhost:4200",
@@ -27,6 +37,25 @@ app.add_middleware(
 )
 
 app.include_router(api.auth.router)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    idem = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    logger.info(f"rid={idem} start request path={request.url.path}")
+    start_time = time.time()
+
+    response = await call_next(request)
+
+    process_time = (time.time() - start_time) * 1000
+    formatted_process_time = '{0:.2f}'.format(process_time)
+    logger.info(
+        f"rid={idem} completed_in={formatted_process_time}ms status_code={response.status_code}")
+    log_file = open('log.log', 'a')
+    log_file.write(
+        f"rid={idem} start request path={request.url.path} completed_in={formatted_process_time}ms status_code={response.status_code}\n")
+    log_file.close()
+    return response
 
 
 @app.post("/insert")
